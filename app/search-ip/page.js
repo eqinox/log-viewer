@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import axios from "axios";
 import { Input } from "@/components/ui/input";
@@ -12,29 +12,34 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
-export default function SearchByIP() {
+function SearchByIPComponent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const [ip, setIp] = useState("");
   const [records, setRecords] = useState([]);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // Fetch records based on IP
   const fetchRecords = async (ipAddress) => {
     if (!ipAddress.trim()) return;
+
+    setLoading(true);
+    setError("");
 
     try {
       const res = await axios.get(`/api/records/ip/${ipAddress}`);
       res.data.forEach((item) => {
         item.records = JSON.parse(item.records);
       });
-      console.log("res", res.data);
+
       setRecords(res.data);
-      setError("");
+      setLoading(false);
     } catch (err) {
       setError("No records found for this IP.");
       setRecords([]);
+      setLoading(false);
     }
   };
 
@@ -46,8 +51,8 @@ export default function SearchByIP() {
       return;
     }
 
-    // Update URL query params
-    router.push(`?ip=${encodeURIComponent(ip)}`, { scroll: false });
+    // Update URL query params without reloading the page
+    router.replace(`?ip=${encodeURIComponent(ip)}`, { scroll: false });
 
     // Fetch records
     fetchRecords(ip);
@@ -63,7 +68,7 @@ export default function SearchByIP() {
   }, [searchParams]);
 
   return (
-    <div className="p-6">
+    <div className="p-6 min-h-screen bg-gray-900 text-white flex flex-col items-center">
       <h2 className="text-lg font-bold mb-4">Search by IP</h2>
 
       <form
@@ -85,10 +90,11 @@ export default function SearchByIP() {
         </Button>
       </form>
 
-      {error && <p className="text-red-500 mt-2">{error}</p>}
+      {loading && <p className="text-blue-500 mt-4">Loading records...</p>}
+      {error && !loading && <p className="text-red-500 mt-2">{error}</p>}
 
-      {records.length > 0 && (
-        <div>
+      {records.length > 0 && !loading && (
+        <div className="mt-6 w-full max-w-lg">
           {records.map((rec, index) => (
             <HoverCard key={index}>
               <HoverCardTrigger asChild>
@@ -96,24 +102,31 @@ export default function SearchByIP() {
                   {rec.date}
                 </Button>
               </HoverCardTrigger>
-              <HoverCardContent className="w-96">
-                <ScrollArea className="h-72 rounded-md border">
-                  <div className="p-2">
+              <HoverCardContent className="w-96 bg-gray-800 border-gray-700 shadow-lg">
+                <ScrollArea className="h-72 rounded-md border border-gray-700">
+                  <div className="p-4">
                     <h4 className="mb-4 text-md font-medium leading-none">
                       {rec.date}
                     </h4>
-                    {rec.records.length > 0 &&
+                    {rec.records.length > 0 ? (
                       rec.records.map((innerRecord, index2) => (
-                        <div key={index2}>
-                          <div key={index2} className="text-xl">
-                            {innerRecord.time}:{" "}
-                            <strong>{innerRecord.name}</strong>{" "}
+                        <div key={index2} className="text-gray-300 text-sm">
+                          <div className="mb-2">
+                            <span className="text-blue-400">
+                              {innerRecord.time}
+                            </span>
+                            :{" "}
+                            <strong className="text-white">
+                              {innerRecord.name}
+                            </strong>{" "}
                             {innerRecord.action}
                           </div>
-                          <Separator className="my-2" />
+                          <Separator className="my-2 border-gray-600" />
                         </div>
-                      ))}
-                    {rec.records.length === 0 && <div>No records found</div>}
+                      ))
+                    ) : (
+                      <div className="text-gray-400">No records found</div>
+                    )}
                   </div>
                 </ScrollArea>
               </HoverCardContent>
@@ -122,5 +135,14 @@ export default function SearchByIP() {
         </div>
       )}
     </div>
+  );
+}
+
+// ✅ Wrap inside Suspense to prevent Next.js SSR issues
+export default function SearchByIPPage() {
+  return (
+    <Suspense fallback={<div className="text-white">Loading...</div>}>
+      <SearchByIPComponent />
+    </Suspense>
   );
 }
