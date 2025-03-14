@@ -1,5 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,8 +22,24 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-900 text-amber-50`}
       >
+        <div className="flex flex-col items-center">
+          <h2 className="text-3xl mb-4">Log Viewer</h2>
+          <div className="flex gap-2">
+            <Link href="/filter">
+              <Button variant="secondary" className="cursor-pointer">
+                Filter by Date
+              </Button>
+            </Link>
+            |
+            <Link href="/search-ip">
+              <Button variant="secondary" className="cursor-pointer">
+                Search by IP
+              </Button>
+            </Link>
+          </div>
+        </div>
         {children}
       </body>
     </html>
