@@ -20,6 +20,7 @@ function SearchByIPComponent() {
   const [records, setRecords] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showTableInitial, setShowTableInitial] = useState(false);
 
   // Fetch records based on IP
   const fetchRecords = async (ipAddress) => {
@@ -36,10 +37,12 @@ function SearchByIPComponent() {
 
       setRecords(res.data);
       setLoading(false);
+      setShowTableInitial(true);
     } catch (err) {
       setError("No records found for this IP.");
       setRecords([]);
       setLoading(false);
+      setShowTableInitial(true);
     }
   };
 
@@ -133,6 +136,9 @@ function SearchByIPComponent() {
             </HoverCard>
           ))}
         </div>
+      )}
+      {!loading && showTableInitial && records.length === 0 && (
+        <div className="text-gray-400">No records found</div>
       )}
     </div>
   );
